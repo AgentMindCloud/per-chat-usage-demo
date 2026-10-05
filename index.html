@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly usage by chat</title>
+  <style>
+    :root {
+      --paper: #f3efe6;
+      --card: #fffdf8;
+      --ink: #1e1a16;
+      --muted: #6d655c;
+      --line: #e3dacb;
+      --track: #ece4d6;
+      --plan: #1d6b45;
+      --plan-soft: #e5f2ea;
+      --demand: #9a4b12;
+      --demand-soft: #f8ecdf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .banner {
+      margin: 0;
+      padding: 0.7rem 1.25rem;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 0.95rem;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+    .wrap {
+      width: min(64rem, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 3rem;
+    }
+    header.top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .eyebrow {
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 {
+      margin: 0.15rem 0 0;
+      font-family: Palatino, "Iowan Old Style", Georgia, serif;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      font-weight: 500;
+      line-height: 1.1;
+    }
+    .lede { margin: 0.5rem 0 0; max-width: 38rem; color: var(--muted); font-size: 0.95rem; }
+    nav { display: flex; gap: 1rem; font-size: 0.95rem; }
+    nav button, .pills button {
+      font: inherit;
+      cursor: pointer;
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--muted);
+      text-decoration: underline;
+      text-decoration-color: var(--line);
+      text-underline-offset: 0.25rem;
+    }
+    nav button[aria-current="page"] { color: var(--ink); font-weight: 700; }
+    .pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .pills button {
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      color: var(--ink);
+    }
+    .pills button[aria-current="page"] {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 1.25rem;
+    }
+    .figure {
+      margin: 0.2rem 0 0;
+      font-family: Palatino, "Iowan Old Style", Georgia, serif;
+      font-size: 3.6rem;
+      line-height: 1;
+    }
+    .split { display: grid; gap: 0.75rem; margin-top: 1rem; }
+    @media (min-width: 640px) { .split { grid-template-columns: 1fr 1fr; } }
+    .bucket { border-radius: 0.75rem; padding: 0.75rem 1rem; }
+    .bucket dt { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .bucket dd { margin: 0.2rem 0 0; font-size: 1.5rem; }
+    .plan { background: var(--plan-soft); }
+    .plan dt, .plan-text { color: var(--plan); }
+    .demand { background: var(--demand-soft); }
+    .demand dt, .demand-text { color: var(--demand); }
+    .track { height: 0.75rem; border-radius: 999px; background: var(--track); overflow: hidden; margin-top: 1.15rem; }
+    .fill { display: flex; height: 100%; }
+    .fill span { display: block; height: 100%; }
+    .fill .plan-bar { background: var(--plan); }
+    .fill .demand-bar { background: var(--demand); }
+    .note, .fine { color: var(--muted); font-size: 0.95rem; }
+    .stack { display: flex; flex-direction: column; gap: 1.5rem; }
+    .cards { display: flex; flex-direction: column; gap: 0.75rem; }
+    .chat-card h2 { margin: 0; font-size: 1.1rem; font-weight: 650; }
+    .id { margin: 0; font-size: 0.75rem; color: var(--muted); }
+    .bot { margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--muted); }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.75rem 0 0; font-size: 0.9rem; }
+    .metrics dt { color: var(--muted); }
+    .metrics dd { margin: 0; font-weight: 650; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+    caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    th, td { padding: 0.75rem 1rem; vertical-align: top; }
+    thead th {
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+    tbody tr + tr td { border-top: 1px solid var(--line); }
+    tfoot td { border-top: 1px solid var(--line); font-weight: 700; background: var(--paper); }
+    .name { font-weight: 650; }
+    .table-wrap { display: none; overflow: hidden; padding: 0; }
+    @media (min-width: 768px) {
+      .cards { display: none; }
+      .table-wrap { display: block; }
+    }
+    .empty, .error-box { padding: 2rem 1.25rem; }
+    .empty { border-style: dashed; }
+    .error-box { border-color: var(--demand); background: var(--demand-soft); }
+    .error-box h2, .empty h2, .checks h2, .summary p.lead {
+      font-family: Palatino, "Iowan Old Style", Georgia, serif;
+      font-weight: 500;
+    }
+    .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+    .rowhead { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+    .rowhead h2 { margin: 0; font-size: 1.15rem; font-family: inherit; font-weight: 650; }
+    .badge { border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.75rem; font-weight: 700; }
+    .ok { background: var(--plan-soft); color: var(--plan); }
+    .bad { background: var(--demand-soft); color: var(--demand); }
+    .summary .lead { margin: 0.25rem 0 0; font-size: 1.15rem; }
+  </style>
+</head>
+<body>
+  <p class="banner">Draft demo, sample data. Build verdict: FAIL (case 1)</p>
+  <div class="wrap" id="app"></div>
+  <script>
+    const ROUNDING_TOLERANCE_TENTHS = 1;
+    const CASE_LABEL = {
+      1: "Lump weekly percent only",
+      2: "Per-bot rows only, no per-chat slice",
+      3: "Per-chat rows do not sum within rounding",
+      4: "Plan vs on-demand unlabeled, or on-demand invisible",
+      5: "Second quota or new SKU",
+      6: "A turn attributed to the wrong conversation"
+    };
+
+    const sampleWeek = {
+      weeklyPercent: 64,
+      turns: [
+        { turnId: "t-pipe-1", conversationId: "c-pipeline", chatName: "Pipeline review", botName: "Ada", bucket: "plan-included", units: 100 },
+        { turnId: "t-pipe-2", conversationId: "c-pipeline", chatName: "Pipeline review", botName: "Ada", bucket: "plan-included", units: 80 },
+        { turnId: "t-inbox", conversationId: "c-inbox", chatName: "Inbox triage", botName: "Ada", bucket: "plan-included", units: 120 },
+        { turnId: "t-deploy-plan", conversationId: "c-deploy", chatName: "Deploy watch", botName: "Bea", bucket: "plan-included", units: 80 },
+        { turnId: "t-deploy-od", conversationId: "c-deploy", chatName: "Deploy watch", botName: "Bea", bucket: "on-demand", units: 40 },
+        { turnId: "t-calendar", conversationId: "c-calendar", chatName: "Calendar hold", botName: "Cal", bucket: "plan-included", units: 100 },
+        { turnId: "t-research-plan", conversationId: "c-research", chatName: "Research notes", botName: "Dee", bucket: "plan-included", units: 40 },
+        { turnId: "t-research-od", conversationId: "c-research", chatName: "Research notes", botName: "Dee", bucket: "on-demand", units: 20 },
+        { turnId: "t-pc", conversationId: "c-pc-notes", chatName: "Locked-PC notes", botName: "Edd", bucket: "plan-included", units: 60 }
+      ]
+    };
+    const emptyWeek = { weeklyPercent: 0, turns: [] };
+    const unreconcilableWeek = { weeklyPercent: 64, turns: [] };
+
+    function percentToTenths(percent) {
+      if (!Number.isFinite(percent) || percent < 0) {
+        throw new Error("Weekly percent must be a non-negative finite number");
+      }
+      return Math.round(percent * 10);
+    }
+
+    function formatTenths(tenths) {
+      const sign = tenths < 0 ? "-" : "";
+      const abs = Math.abs(tenths);
+      return sign + Math.floor(abs / 10) + "." + (abs % 10);
+    }
+
+    function allocateTenths(totalTenths, weights) {
+      if (weights.length === 0) {
+        if (totalTenths === 0) return [];
+        throw new Error("Weekly percent is non-zero but there is no chat usage to allocate");
+      }
+      const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+      if (totalTenths === 0) return weights.map(() => 0);
+      if (weightSum <= 0) throw new Error("Weekly percent is non-zero but chat usage weight is zero");
+      const exact = weights.map((weight) => (totalTenths * weight) / weightSum);
+      const base = exact.map((value) => Math.floor(value + 1e-9));
+      const remaining = totalTenths - base.reduce((sum, value) => sum + value, 0);
+      const order = exact
+        .map((value, index) => ({ index, fraction: value - Math.floor(value + 1e-9) }))
+        .sort((left, right) => right.fraction - left.fraction || left.index - right.index);
+      const allocated = base.slice();
+      for (let step = 0; step < remaining; step += 1) {
+        const target = order[step];
+        if (!target) break;
+        allocated[target.index] += 1;
+      }
+      return allocated;
+    }
+
+    function buildLedger(input) {
+      const weeklyTenths = percentToTenths(input.weeklyPercent);
+      const chats = new Map();
+      const seenTurns = new Set();
+      input.turns.forEach((turn, index) => {
+        if (seenTurns.has(turn.turnId)) throw new Error("Duplicate turn id " + turn.turnId);
+        seenTurns.add(turn.turnId);
+        if (!Number.isInteger(turn.units) || turn.units < 0) {
+          throw new Error("Turn " + turn.turnId + " units must be a non-negative integer");
+        }
+        if (turn.bucket !== "plan-included" && turn.bucket !== "on-demand") {
+          throw new Error("Turn " + turn.turnId + " has an unknown usage bucket");
+        }
+        const existing = chats.get(turn.conversationId);
+        if (!existing) {
+          chats.set(turn.conversationId, {
+            conversationId: turn.conversationId,
+            chatName: turn.chatName,
+            botName: turn.botName,
+            planUnits: turn.bucket === "plan-included" ? turn.units : 0,
+            onDemandUnits: turn.bucket === "on-demand" ? turn.units : 0,
+            order: index
+          });
+          return;
+        }
+        if (existing.chatName !== turn.chatName || existing.botName !== turn.botName) {
+          throw new Error("Conversation " + turn.conversationId + " is named differently across turns");
+        }
+        if (turn.bucket === "plan-included") existing.planUnits += turn.units;
+        else existing.onDemandUnits += turn.units;
+      });
+      const ordered = Array.from(chats.values()).sort((left, right) => left.order - right.order);
+      const shareTenths = allocateTenths(weeklyTenths, ordered.map((chat) => chat.planUnits + chat.onDemandUnits));
+      const rows = ordered.map((chat, index) => {
+        const chatTenths = shareTenths[index] || 0;
+        const parts = allocateTenths(chatTenths, [chat.planUnits, chat.onDemandUnits]);
+        return {
+          conversationId: chat.conversationId,
+          chatName: chat.chatName,
+          botName: chat.botName,
+          planIncludedTenths: parts[0] || 0,
+          onDemandTenths: parts[1] || 0,
+          shareTenths: chatTenths
+        };
+      });
+      return {
+        pool: "weekly",
+        weeklyTenths,
+        planIncludedTenths: rows.reduce((sum, row) => sum + row.planIncludedTenths, 0),
+        onDemandTenths: rows.reduce((sum, row) => sum + row.onDemandTenths, 0),
+        chats: rows,
+        turns: input.turns.map((turn) => ({
+          turnId: turn.turnId,
+          conversationId: turn.conversationId,
+          attributedConversationId: turn.conversationId
+        }))
+      };
+    }
+
+    function ledgerToView(ledger) {
+      return {
+        weeklyTenths: ledger.weeklyTenths,
+        pool: ledger.pool,
+        secondQuota: null,
+        sku: null,
+        wallet: null,
+        accountPlanIncludedTenths: ledger.planIncludedTenths,
+        accountOnDemandTenths: ledger.onDemandTenths,
+        rows: ledger.chats.map((chat) => ({
+          kind: "chat",
+          conversationId: chat.conversationId,
+          chatName: chat.chatName,
+          botName: chat.botName,
+          planIncludedTenths: chat.planIncludedTenths,
+          onDemandTenths: chat.onDemandTenths,
+          shareTenths: chat.shareTenths,
+          unlabeledTenths: null
+        })),
+        turns: ledger.turns
+      };
+    }
+
+    function failureCases(view) {
+      const cases = new Set();
+      const chatRows = view.rows.filter((row) => row.kind === "chat" && (row.conversationId !== null || row.chatName !== null));
+      const botRows = view.rows.filter((row) => row.kind === "bot");
+      if (chatRows.length === 0 && botRows.length === 0 && view.weeklyTenths > 0) cases.add(1);
+      if (chatRows.length === 0 && botRows.length > 0) cases.add(2);
+      if (chatRows.length > 0) {
+        const shareSum = chatRows.reduce((sum, row) => sum + (row.shareTenths || 0), 0);
+        if (Math.abs(shareSum - view.weeklyTenths) > ROUNDING_TOLERANCE_TENTHS) cases.add(3);
+        const labeled = chatRows.every((row) => row.planIncludedTenths !== null && row.onDemandTenths !== null);
+        if (labeled) {
+          const partSum = chatRows.reduce((sum, row) => sum + row.planIncludedTenths + row.onDemandTenths, 0);
+          if (Math.abs(partSum - view.weeklyTenths) > ROUNDING_TOLERANCE_TENTHS) cases.add(3);
+          chatRows.forEach((row) => {
+            if (Math.abs(row.planIncludedTenths + row.onDemandTenths - (row.shareTenths || 0)) > ROUNDING_TOLERANCE_TENTHS) {
+              cases.add(3);
+            }
+          });
+        }
+        if (chatRows.some((row) => row.planIncludedTenths === null || row.onDemandTenths === null)) cases.add(4);
+      } else if (view.weeklyTenths > 0) {
+        if (view.accountPlanIncludedTenths === null || view.accountOnDemandTenths === null) cases.add(4);
+      }
+      if (view.secondQuota !== null || view.sku !== null || view.wallet !== null || view.pool !== "weekly") cases.add(5);
+      if (view.turns.some((turn) => turn.attributedConversationId !== turn.conversationId)) cases.add(6);
+      return Array.from(cases).sort((left, right) => left - right);
+    }
+
+    function chatRow(chat, overrides) {
+      return Object.assign({
+        kind: "chat",
+        conversationId: chat.conversationId,
+        chatName: chat.chatName,
+        botName: chat.botName,
+        planIncludedTenths: chat.planIncludedTenths,
+        onDemandTenths: chat.onDemandTenths,
+        shareTenths: chat.shareTenths,
+        unlabeledTenths: null
+      }, overrides || {});
+    }
+
+    function baseFrom(ledger) {
+      return {
+        weeklyTenths: ledger.weeklyTenths,
+        pool: "weekly",
+        secondQuota: null,
+        sku: null,
+        wallet: null,
+        accountPlanIncludedTenths: ledger.planIncludedTenths,
+        accountOnDemandTenths: ledger.onDemandTenths,
+        turns: ledger.turns
+      };
+    }
+
+    function failureFixtures(ledger) {
+      const goodRows = ledger.chats.map((chat) => chatRow(chat));
+      const byBot = new Map();
+      ledger.chats.forEach((chat) => {
+        const current = byBot.get(chat.botName) || { planIncludedTenths: 0, onDemandTenths: 0, shareTenths: 0 };
+        current.planIncludedTenths += chat.planIncludedTenths;
+        current.onDemandTenths += chat.onDemandTenths;
+        current.shareTenths += chat.shareTenths;
+        byBot.set(chat.botName, current);
+      });
+      return [
+        {
+          id: 1,
+          title: "Lump weekly percent only",
+          detail: "The account figure is present and no chat is identifiable. This fixture also leaves plan and on-demand unlabeled, so it trips case 4 as well.",
+          view: Object.assign(baseFrom(ledger), {
+            accountPlanIncludedTenths: null,
+            accountOnDemandTenths: null,
+            rows: [{
+              kind: "lump",
+              conversationId: null,
+              chatName: null,
+              botName: null,
+              planIncludedTenths: null,
+              onDemandTenths: null,
+              shareTenths: ledger.weeklyTenths,
+              unlabeledTenths: ledger.weeklyTenths
+            }],
+            turns: []
+          })
+        },
+        {
+          id: 2,
+          title: "Per-bot rows only",
+          detail: "Ada's two chats are collapsed into one bot row. Shares still sum, and plan vs on-demand stays labeled, but no conversation is identifiable.",
+          view: Object.assign(baseFrom(ledger), {
+            rows: Array.from(byBot.entries()).map(([botName, totals]) => ({
+              kind: "bot",
+              conversationId: null,
+              chatName: null,
+              botName: botName,
+              planIncludedTenths: totals.planIncludedTenths,
+              onDemandTenths: totals.onDemandTenths,
+              shareTenths: totals.shareTenths,
+              unlabeledTenths: null
+            }))
+          })
+        },
+        {
+          id: 3,
+          title: "Per-chat rows that do not sum",
+          detail: "Pipeline review is 5.0 points high, so the chat shares miss the weekly percent by more than 0.1.",
+          view: Object.assign(baseFrom(ledger), {
+            rows: goodRows.map((row, index) => index === 0 ? Object.assign({}, row, { shareTenths: row.shareTenths + 50 }) : row)
+          })
+        },
+        {
+          id: 4,
+          title: "Plan vs on-demand unlabeled",
+          detail: "Each chat is identifiable and the shares sum, but spend is one unlabeled number, so on-demand is invisible.",
+          view: Object.assign(baseFrom(ledger), {
+            accountPlanIncludedTenths: null,
+            accountOnDemandTenths: null,
+            rows: goodRows.map((row) => Object.assign({}, row, {
+              planIncludedTenths: null,
+              onDemandTenths: null,
+              unlabeledTenths: row.shareTenths
+            }))
+          })
+        },
+        {
+          id: 5,
+          title: "Second quota or new SKU",
+          detail: "The chat split still reconciles, then a second quota, a SKU, a wallet, and a pool other than weekly are attached.",
+          view: Object.assign(ledgerToView(ledger), {
+            secondQuota: 1000,
+            sku: "grok-bot-extra-pool",
+            wallet: "usage-wallet",
+            pool: "weekly-plus-ondemand"
+          })
+        },
+        {
+          id: 6,
+          title: "Turn attributed to the wrong conversation",
+          detail: "The Deploy watch on-demand turn still belongs to c-deploy, but it is filed on Inbox triage (c-inbox).",
+          view: Object.assign(ledgerToView(ledger), {
+            turns: ledger.turns.map((turn) => turn.turnId === "t-deploy-od"
+              ? Object.assign({}, turn, { attributedConversationId: "c-inbox" })
+              : turn)
+          })
+        }
+      ];
+    }
+
+    function onDemandHiddenView(ledger) {
+      return Object.assign(baseFrom(ledger), {
+        accountOnDemandTenths: null,
+        rows: ledger.chats.map((chat) => chatRow(chat, { onDemandTenths: null }))
+      });
+    }
+
+    function esc(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function parseRoute() {
+      const hash = location.hash.replace(/^#/, "");
+      if (hash === "checks") return { view: "checks", week: "sample" };
+      if (hash === "empty") return { view: "ledger", week: "empty" };
+      if (hash === "error") return { view: "ledger", week: "error" };
+      return { view: "ledger", week: "sample" };
+    }
+
+    function go(hash) {
+      if (location.hash === "#" + hash) render();
+      else location.hash = hash;
+    }
+
+    function nav(view) {
+      return '<nav>' +
+        '<button type="button" data-go="ledger"' + (view === "ledger" ? ' aria-current="page"' : "") + '>Ledger</button>' +
+        '<button type="button" data-go="checks"' + (view === "checks" ? ' aria-current="page"' : "") + '>Failure checks</button>' +
+        '</nav>';
+    }
+
+    function pills(week) {
+      return '<div class="pills">' +
+        '<button type="button" data-go="ledger"' + (week === "sample" ? ' aria-current="page"' : "") + '>Sample week</button>' +
+        '<button type="button" data-go="empty"' + (week === "empty" ? ' aria-current="page"' : "") + '>Empty week</button>' +
+        '<button type="button" data-go="error"' + (week === "error" ? ' aria-current="page"' : "") + '>Unreconcilable week</button>' +
+        '</div>';
+    }
+
+    function ledgerMarkup(ledger) {
+      const weekly = formatTenths(ledger.weeklyTenths);
+      const plan = formatTenths(ledger.planIncludedTenths);
+      const demand = formatTenths(ledger.onDemandTenths);
+      const fill = Math.min(ledger.weeklyTenths / 10, 100);
+      const planShare = ledger.weeklyTenths === 0 ? 0 : (ledger.planIncludedTenths / ledger.weeklyTenths) * 100;
+      const demandShare = ledger.weeklyTenths === 0 ? 0 : (ledger.onDemandTenths / ledger.weeklyTenths) * 100;
+      const cards = ledger.chats.map((chat) =>
+        '<article class="card chat-card">' +
+          '<p class="id">' + esc(chat.conversationId) + '</p>' +
+          '<h2>' + esc(chat.chatName) + '</h2>' +
+          '<p class="bot">Bot · ' + esc(chat.botName) + '</p>' +
+          '<dl class="metrics">' +
+            '<div><dt class="plan-text">Plan</dt><dd>' + esc(formatTenths(chat.planIncludedTenths)) + '</dd></div>' +
+            '<div><dt class="demand-text">On-demand</dt><dd>' + esc(formatTenths(chat.onDemandTenths)) + '</dd></div>' +
+            '<div><dt>Share</dt><dd>' + esc(formatTenths(chat.shareTenths)) + '%</dd></div>' +
+          '</dl>' +
+        '</article>'
+      ).join("");
+      const rows = ledger.chats.map((chat) =>
+        '<tr>' +
+          '<td><div class="name">' + esc(chat.chatName) + '</div><div class="id">' + esc(chat.conversationId) + '</div></td>' +
+          '<td>' + esc(chat.botName) + '</td>' +
+          '<td class="plan-text">' + esc(formatTenths(chat.planIncludedTenths)) + '</td>' +
+          '<td class="demand-text">' + esc(formatTenths(chat.onDemandTenths)) + '</td>' +
+          '<td class="name">' + esc(formatTenths(chat.shareTenths)) + '%</td>' +
+        '</tr>'
+      ).join("");
+      return '<div class="stack">' +
+        '<section class="card">' +
+          '<p class="note">Account weekly usage</p>' +
+          '<p class="figure">' + esc(weekly) + '%</p>' +
+          '<dl class="split">' +
+            '<div class="bucket plan"><dt>Plan-included</dt><dd>' + esc(plan) + ' pts</dd></div>' +
+            '<div class="bucket demand"><dt>On-demand</dt><dd>' + esc(demand) + ' pts</dd></div>' +
+          '</dl>' +
+          '<div class="track" aria-hidden="true"><div class="fill" style="width:' + fill + '%">' +
+            '<span class="plan-bar" style="width:' + planShare + '%"></span>' +
+            '<span class="demand-bar" style="width:' + demandShare + '%"></span>' +
+          '</div></div>' +
+          '<p class="note">' + esc(plan) + ' plan-included + ' + esc(demand) + ' on-demand = ' + esc(weekly) + '% of the same weekly pool. Chat shares below also sum to ' + esc(weekly) + '%.</p>' +
+        '</section>' +
+        '<div class="cards">' + cards + '</div>' +
+        '<div class="card table-wrap"><table>' +
+          '<caption>Per-chat share of the ' + esc(weekly) + '% weekly usage figure</caption>' +
+          '<thead><tr><th>Chat</th><th>Bot</th><th>Plan-included</th><th>On-demand</th><th>Share of week</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '<tfoot><tr><td colspan="2">Same weekly pool</td><td class="plan-text">' + esc(plan) + '</td><td class="demand-text">' + esc(demand) + '</td><td>' + esc(weekly) + '%</td></tr></tfoot>' +
+        '</table></div>' +
+        '<p class="fine">Sample data for a draft, not a signed-in Cursor account. On-demand points are the part of this week\'s ' + esc(weekly) + '% tagged as on-demand spend. They are not a second allowance, a new plan, or a wallet.</p>' +
+      '</div>';
+    }
+
+    function renderLedger(week) {
+      let body = "";
+      if (week === "error") {
+        try {
+          buildLedger(unreconcilableWeek);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unable to split this week";
+          body = '<section class="card error-box" role="alert">' +
+            '<h2>This week does not reconcile</h2>' +
+            '<p>' + esc(message) + '</p>' +
+            '<p class="note">A non-zero weekly percent needs per-chat usage before it can be split. The draft stops rather than showing the lump figure alone.</p>' +
+          '</section>';
+        }
+      } else {
+        const ledger = buildLedger(week === "empty" ? emptyWeek : sampleWeek);
+        body = ledger.chats.length === 0
+          ? '<section class="card empty"><h2>No chat usage this week</h2><p class="note">The account figure is 0.0%. Plan-included is 0.0 and on-demand is 0.0. There is nothing to attribute, so the ledger stays empty instead of inventing a chat.</p></section>'
+          : ledgerMarkup(ledger);
+      }
+      return '<header class="top"><div>' +
+        '<p class="eyebrow">Local draft</p>' +
+        '<h1>Weekly usage by chat</h1>' +
+        '<p class="lede">One weekly pool. Each row is a conversation. The bot is context. Plan-included and on-demand are labels on that same percent.</p>' +
+        '</div>' + nav("ledger") + '</header>' +
+        pills(week) + body;
+    }
+
+    function renderChecks() {
+      const ledger = buildLedger(sampleWeek);
+      const good = failureCases(ledgerToView(ledger));
+      const fixtures = failureFixtures(ledger);
+      const hidden = failureCases(onDemandHiddenView(ledger));
+      const caught = fixtures.every((fixture) => failureCases(fixture.view).indexOf(fixture.id) !== -1);
+      const items = fixtures.map((fixture) => {
+        const tripped = failureCases(fixture.view);
+        const hit = tripped.indexOf(fixture.id) !== -1;
+        const triggered = tripped.length === 0 ? "none" : tripped.map((id) => id + " " + CASE_LABEL[id]).join("; ");
+        return '<li class="card"><div class="rowhead"><h2>' + fixture.id + '. ' + esc(fixture.title) + '</h2>' +
+          '<span class="badge ' + (hit ? "ok" : "bad") + '">' + (hit ? "Caught " + esc(tripped.join(", ")) : "Missed") + '</span></div>' +
+          '<p class="note">' + esc(fixture.detail) + '</p>' +
+          '<p class="fine">Triggered: ' + esc(triggered) + '</p></li>';
+      }).join("");
+      return '<header class="top"><div>' +
+        '<p class="eyebrow">Recorded check</p>' +
+        '<h1>Failure cases</h1>' +
+        '<p class="lede">The sample week is ' + esc(formatTenths(ledger.weeklyTenths)) + '% and trips no case. Each fixture below is a broken view of that same week.</p>' +
+        '</div>' + nav("checks") + '</header>' +
+        '<section class="card summary"><p class="note">Sample ledger</p>' +
+        '<p class="lead">' + (good.length === 0 ? "No failure cases." : "Tripped " + esc(good.join(", ")) + ".") + '</p>' +
+        '<p class="note">' + (caught ? "All six numbered fixtures are caught." : "A numbered fixture was missed.") + '</p></section>' +
+        '<ol class="list" style="margin-top:1rem">' + items +
+          '<li class="card"><div class="rowhead"><h2>4b. On-demand column removed</h2>' +
+          '<span class="badge ok">Caught ' + esc(hidden.join(", ")) + '</span></div>' +
+          '<p class="note">Plan-included points stay on each chat. The on-demand field is removed, including chats that had on-demand usage. That is still case 4.</p></li>' +
+        '</ol>';
+    }
+
+    function render() {
+      const route = parseRoute();
+      document.getElementById("app").innerHTML = route.view === "checks" ? renderChecks() : renderLedger(route.week);
+    }
+
+    document.getElementById("app").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-go]");
+      if (!button) return;
+      go(button.getAttribute("data-go"));
+    });
+    window.addEventListener("hashchange", render);
+    render();
+  </script>
+</body>
+</html>
